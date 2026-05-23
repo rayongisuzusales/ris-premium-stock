@@ -1088,11 +1088,17 @@ function loadReceiptPage() {
       CACHE.reqs = r.data;
       rReceiptPage();
     } else {
-      toast('โหลดข้อมูลไม่สำเร็จ', 'error');
+      // API failed but still show page with cached data
       rReceiptPage();
+      toast('โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช', 'warning');
     }
   });
 }
+function isShipped(r) {
+  var f = flowSt(r);
+  return f.done === true || f.stock === 'shipped';
+}
+
 function rReceiptPage() {
   var el = document.getElementById('receipt-list');
   if (!el) return;
