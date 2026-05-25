@@ -1235,6 +1235,11 @@ function rReceiptPage() {
   });
 }
 
+// Alias for backward compatibility
+function confirmReceiptItem(reqId, itemIndex, cardId, btnId) {
+  submitReceiptItem(reqId, itemIndex, cardId, btnId);
+}
+
 function submitReceiptItem(reqId, itemIndex, cardId, btnId) {
   var dataId = 'receipt-data-' + reqId + '-' + itemIndex;
   var dataEl = document.getElementById(dataId);
