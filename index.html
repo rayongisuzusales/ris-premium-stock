@@ -1277,7 +1277,9 @@ function submitReceiptItem(reqId, itemIndex, cardId, btnId) {
       }
     } else {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> ส่งรูปยืนยันชิ้นที่ ' + (itemIndex + 1); }
-      toast((r && r.error) || 'ส่งไม่สำเร็จ กรุณาลองใหม่', 'error');
+      var errMsg = (r && r.error) || (e && e.message) || 'ส่งไม่สำเร็จ';
+      console.error('Receipt error:', errMsg, r, e);
+      toast(errMsg, 'error');
     }
   });
 }
