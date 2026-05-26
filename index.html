@@ -326,7 +326,7 @@ tbody tr:hover{background:#fafbff;}
           <button class="btn btnp" onclick="openAddUser()"><i class="ti ti-user-plus"></i> เพิ่มผู้ใช้ใหม่</button>
         </div>
         <div class="alert ainfo"><i class="ti ti-shield-lock"></i>
-          <span>เฉพาะ Admin เท่านั้นที่สร้าง/แก้ไข/ระงับบัญชีได้ · หลังสร้าง User ใหม่ toast จะแสดง Username/Password</span>
+          <span id="users-info-alert">เฉพาะ Admin เท่านั้นที่สร้าง/แก้ไข/ระงับบัญชีได้ · หลังสร้าง User ใหม่ toast จะแสดง Username/Password</span>
         </div>
         <div class="tabs" id="utabs">
           <button class="tbtn active" onclick="fusers('all',this)">ทั้งหมด</button>
@@ -367,8 +367,11 @@ tbody tr:hover{background:#fafbff;}
               <div class="fgrid">
                 <div class="ff"><label>ชื่อผู้เบิก</label><input id="rf-name" readonly></div>
                 <div class="ff"><label>สาขา</label><input id="rf-branch" readonly></div>
-                <div class="ff"><label>จำนวนลูกค้า *</label>
-                  <div class="qctrl"><button class="qbtn" onclick="cq(-1)">&#8722;</button><input class="qinp" id="rf-qty" type="number" value="1" min="1" max="50" onchange="rCustomerInputs()"><button class="qbtn" onclick="cq(1)">+</button></div>
+                <div class="ff ful"><label>รายการของพรีเมียม *</label><select id="rf-item" onchange="umax()"><option value="">-- เลือกรายการ --</option></select></div>
+                <div class="ff">
+                  <label>จำนวน *</label>
+                  <div class="qctrl"><button class="qbtn" onclick="cq(-1)">&#8722;</button><input class="qinp" id="rf-qty" type="number" value="1" min="1"><button class="qbtn" onclick="cq(1)">+</button></div>
+                  <span id="rf-hint" style="font-size:10px;color:var(--muted)"></span>
                 </div>
                 <div class="ff"><label>วัตถุประสงค์</label>
                   <select id="rf-purp"><option>แจกลูกค้า</option><option>กิจกรรมสาขา</option><option>ส่งให้ลูกค้า VIP</option><option>งาน Event</option><option>อื่นๆ</option></select>
@@ -551,7 +554,7 @@ var CACHE = { items: [], reqs: [], users: [], settings: { branches: [], depts: [
 var ROLES = {
   admin:   { label: '🛡️ Admin',     color: '#1a3a8f', bg: '#eef2ff', pages: ['dashboard','stock','requests','report','users','settings','photos'] },
   manager: { label: '👔 ผู้จัดการ', color: '#6b21a8', bg: '#f3e8ff', pages: ['dashboard','stock','requests'] },
-  stock:   { label: '📦 สต๊อก',    color: '#0c4a6e', bg: '#e0f2fe', pages: ['dashboard','stock','requests','report','photos'] },
+  stock:   { label: '📦 สต๊อก',    color: '#0c4a6e', bg: '#e0f2fe', pages: ['dashboard','stock','requests','report','users','photos'] },
   user:    { label: '👤 ผู้เบิก',   color: '#555',    bg: '#f0f0f0', pages: ['reqform','myhist','catalog','receipt'] }
 };
 
@@ -642,7 +645,7 @@ function buildSidebar(role) {
   var menus = {
     admin:   [{lbl:'เมนู Admin'},{page:'dashboard',icon:'ti-layout-dashboard',label:'แดชบอร์ด'},{page:'stock',icon:'ti-package',label:'จัดการสต๊อก'},{page:'requests',icon:'ti-clipboard-list',label:'คำขอเบิก'},{div:true},{page:'report',icon:'ti-chart-bar',label:'รายงาน'},{page:'users',icon:'ti-users',label:'จัดการผู้ใช้'},{page:'settings',icon:'ti-settings',label:'ตั้งค่าระบบ'},{page:'photos',icon:'ti-photo',label:'รูปยืนยันรับของ'}],
     manager: [{lbl:'เมนูผู้จัดการ'},{page:'dashboard',icon:'ti-layout-dashboard',label:'แดชบอร์ด'},{page:'stock',icon:'ti-package',label:'รายการของพรีเมียม'},{page:'requests',icon:'ti-clipboard-list',label:'อนุมัติคำขอ'}],
-    stock:   [{lbl:'เมนูสต๊อก'},{page:'dashboard',icon:'ti-layout-dashboard',label:'แดชบอร์ด'},{page:'stock',icon:'ti-package',label:'รายการของพรีเมียม'},{page:'requests',icon:'ti-package-export',label:'จัดส่งของ'},{page:'report',icon:'ti-chart-bar',label:'รายงาน'},{page:'photos',icon:'ti-photo',label:'รูปยืนยัน'}],
+    stock:   [{lbl:'เมนูสต๊อก'},{page:'dashboard',icon:'ti-layout-dashboard',label:'แดชบอร์ด'},{page:'stock',icon:'ti-package',label:'รายการของพรีเมียม'},{page:'requests',icon:'ti-package-export',label:'จัดส่งของ'},{page:'report',icon:'ti-chart-bar',label:'รายงาน'},{page:'users',icon:'ti-users',label:'จัดการผู้ใช้'},{page:'photos',icon:'ti-photo',label:'รูปยืนยัน'}],
     user:    [{lbl:'เมนูผู้เบิก'},{page:'reqform',icon:'ti-plus-circle',label:'เบิกของพรีเมียม'},{page:'myhist',icon:'ti-history',label:'ประวัติการเบิก'},{page:'catalog',icon:'ti-grid-dots',label:'รายการของทั้งหมด'},{page:'receipt',icon:'ti-camera',label:'ยืนยันรับของ'}]
   };
   var items = menus[role] || menus['user'], html = '';
@@ -865,19 +868,29 @@ function renderReqsTable() {
   var role = SESSION.role;
   var titles = { admin: 'คำขอเบิกทั้งหมด', manager: 'อนุมัติคำขอเบิก', stock: 'จัดส่งของ' };
   document.getElementById('req-page-title').textContent = titles[role] || 'คำขอเบิก';
-  document.getElementById('req-page-sub').textContent = role === 'stock' ? 'แสดงเฉพาะที่ผู้จัดการอนุมัติแล้ว' : '';
+  document.getElementById('req-page-sub').textContent =
+    role === 'stock' ? 'แสดงเฉพาะที่ผู้จัดการอนุมัติแล้ว' :
+    role === 'manager' ? 'แสดงเฉพาะคำขอจากสาขาและแผนกของคุณ (' + SESSION.branch + ' / ' + (SESSION.dept || '-') + ')' : '';
   var reqs = CACHE.reqs.slice();
+  // Manager: filter by branch AND dept
+  if (role === 'manager') {
+    reqs = reqs.filter(function(r) {
+      return r.branch === SESSION.branch && (r.dept || '') === (SESSION.dept || '');
+    });
+  }
+  // Stock: only show approved-not-done
   if (role === 'stock') reqs = reqs.filter(function(r) { var f = flowSt(r); return f.mgr === 'approved' && !f.done; });
-  var wait = CACHE.reqs.filter(function(r) { var f = flowSt(r); return (role === 'stock') ? (f.mgr === 'approved' && !f.done) : f.mgr === 'pending'; }).length;
+  var wait = reqs.filter(function(r) { var f = flowSt(r); return (role === 'stock') ? (f.mgr === 'approved' && !f.done) : f.mgr === 'pending'; }).length;
   var wc = document.getElementById('rwcnt'); if (wc) wc.innerHTML = wait ? '<span class="badge bwait" style="margin-left:4px">' + wait + '</span>' : '';
+  var filtered = reqs.slice();
   if (RFilt === 0) {
     if (role === 'stock') { /* already filtered */ }
-    else reqs = reqs.filter(function(r) { var f = flowSt(r); return !f.done && f.mgr === 'pending'; });
+    else filtered = filtered.filter(function(r) { var f = flowSt(r); return !f.done && f.mgr === 'pending'; });
   } else if (RFilt === 1) {
-    reqs = CACHE.reqs.filter(function(r) { var f = flowSt(r); return f.done || f.mgr === 'rejected'; });
+    filtered = reqs.filter(function(r) { var f = flowSt(r); return f.done || f.mgr === 'rejected'; });
   }
-  reqs = reqs.slice().reverse();
-  document.querySelector('#rqtbl tbody').innerHTML = reqs.length ? reqs.map(function(r) {
+  filtered = filtered.slice().reverse();
+  document.querySelector('#rqtbl tbody').innerHTML = filtered.length ? filtered.map(function(r) {
     return '<tr><td style="font-size:10px;color:var(--muted)">#' + String(r.id).slice(-4) + '</td><td><strong>' + r.name + '</strong></td><td>' + r.branch + '</td><td>' + r.item + '</td><td>' + r.qty + ' ' + (r.unit || '') + '</td><td>' + r.purpose + '</td><td>' + fmtD(r.date) + '</td><td>' + flowBadge(r) + '</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">' + flowActions(r) + '</div></td></tr>';
   }).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">ไม่มีรายการ</td></tr>';
 }
@@ -916,14 +929,41 @@ function exportCSV() {
 // ===== USERS =====
 function fusers(f, el) { UFilt = f; document.querySelectorAll('#utabs .tbtn').forEach(function(b) { b.classList.remove('active'); }); if (el) el.classList.add('active'); rUsersTable(); }
 function rUsersTable() {
+  var role = SESSION.role;
+  var canManage = (role === 'admin' || role === 'stock');
+  // Update info alert
+  var alertEl = document.getElementById('users-info-alert');
+  if (alertEl) {
+    alertEl.textContent = role === 'stock'
+      ? 'สต๊อกสามารถสร้าง/แก้ไข/ระงับ ผู้เบิก, ผู้จัดการ, สต๊อก ได้ · ไม่สามารถแก้ไขบัญชี Admin ได้'
+      : 'เฉพาะ Admin เท่านั้นที่สร้าง/แก้ไข/ระงับบัญชีได้ · หลังสร้าง User ใหม่ toast จะแสดง Username/Password';
+  }
+  // Show/hide add user button
+  var addBtn = document.querySelector('#pg-users .btn.btnp');
+  if (addBtn) addBtn.style.display = canManage ? '' : 'none';
   var users = CACHE.users, reqs = CACHE.reqs;
   var list = UFilt === 'active' ? users.filter(function(u) { return u.status === 'active'; }) : UFilt === 'disabled' ? users.filter(function(u) { return u.status === 'disabled'; }) : users;
   document.querySelector('#utbl tbody').innerHTML = list.length ? list.map(function(u) {
-    return '<tr style="' + (u.status === 'disabled' ? 'opacity:.6;' : '') + '"><td><strong>' + u.name + '</strong>' + (u.isSA ? '<span class="badge badm" style="font-size:9px;margin-left:4px">SUPER</span>' : '') + '</td><td style="font-family:monospace;font-size:12px">' + u.username + '</td><td>' + u.branch + '</td><td>' + (u.dept || '-') + '</td><td>' + roleBadge(u.role) + '</td><td><span class="badge ' + (u.status === 'active' ? 'bact' : 'bdis') + '">' + (u.status === 'active' ? 'ใช้งาน' : 'ระงับ') + '</span></td><td style="font-size:11px">' + (u.lastLogin ? new Date(u.lastLogin).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-') + '</td><td>' + (!u.isSA ? '<button class="btn btno btnxs" onclick="oeu(\'' + u.id + '\')"><i class="ti ti-edit"></i> แก้ไข</button>' : '-') + '</td></tr>';
+    var isAdmin = u.role === 'admin' || u.isSA;
+    // Stock cannot edit admin accounts
+    var canEdit = canManage && (!isAdmin || role === 'admin');
+    var editBtn = canEdit ? '<button class="btn btno btnxs" onclick="oeu(\'' + u.id + '\')"><i class="ti ti-edit"></i> แก้ไข</button>' : '<span style="font-size:11px;color:var(--muted)">-</span>';
+    return '<tr style="' + (u.status === 'disabled' ? 'opacity:.6;' : '') + '"><td><strong>' + u.name + '</strong>' + (u.isSA ? '<span class="badge badm" style="font-size:9px;margin-left:4px">SUPER</span>' : '') + '</td><td style="font-family:monospace;font-size:12px">' + u.username + '</td><td>' + u.branch + '</td><td>' + (u.dept || '-') + '</td><td>' + roleBadge(u.role) + '</td><td><span class="badge ' + (u.status === 'active' ? 'bact' : 'bdis') + '">' + (u.status === 'active' ? 'ใช้งาน' : 'ระงับ') + '</span></td><td style="font-size:11px">' + (u.lastLogin ? new Date(u.lastLogin).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-') + '</td><td>' + editBtn + '</td></tr>';
   }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">ไม่มีผู้ใช้งาน</td></tr>';
 }
 function fillSel(selId, list, val) { var sel = document.getElementById(selId); if (!sel) return; sel.innerHTML = list.map(function(v) { return '<option' + (v === val ? ' selected' : '') + '>' + v + '</option>'; }).join(''); }
-function openAddUser() { fillSel('nu-branch', CACHE.settings.branches, ''); fillSel('nu-dept', CACHE.settings.depts, ''); om('adduser'); }
+function openAddUser() {
+  var role = SESSION.role;
+  fillSel('nu-branch', CACHE.settings.branches, '');
+  fillSel('nu-dept', CACHE.settings.depts, '');
+  // Stock cannot create Admin accounts - hide admin option
+  var nuRole = document.getElementById('nu-role');
+  if (nuRole) {
+    nuRole.innerHTML = '<option value="user">👤 ผู้เบิก</option><option value="manager">👔 ผู้จัดการ</option><option value="stock">📦 สต๊อก</option>' +
+      (role === 'admin' ? '<option value="admin">🛡️ Admin</option>' : '');
+  }
+  om('adduser');
+}
 function saveUser() {
   var n = document.getElementById('nu-name').value.trim();
   var u = document.getElementById('nu-user').value.trim().toLowerCase();
@@ -951,13 +991,30 @@ function saveUser() {
 }
 function oeu(id) {
   var u = CACHE.users.find(function(x) { return String(x.id) === String(id); }); if (!u) return;
-  document.getElementById('eu-id').value = id; document.getElementById('eu-name').value = u.name; document.getElementById('eu-user').value = u.username; document.getElementById('eu-pass').value = ''; document.getElementById('eu-role').value = u.role; document.getElementById('eu-status').value = u.status || 'active';
-  fillSel('eu-branch', CACHE.settings.branches, u.branch); fillSel('eu-dept', CACHE.settings.depts, u.dept || '');
+  // Stock cannot edit admin accounts
+  if ((u.role === 'admin' || u.isSA) && SESSION.role !== 'admin') { toast('ไม่มีสิทธิ์แก้ไขบัญชี Admin', 'error'); return; }
+  document.getElementById('eu-id').value = id;
+  document.getElementById('eu-name').value = u.name;
+  document.getElementById('eu-user').value = u.username;
+  document.getElementById('eu-pass').value = '';
+  document.getElementById('eu-status').value = u.status || 'active';
+  fillSel('eu-branch', CACHE.settings.branches, u.branch);
+  fillSel('eu-dept', CACHE.settings.depts, u.dept || '');
+  // Stock cannot assign admin role
+  var euRole = document.getElementById('eu-role');
+  if (euRole) {
+    euRole.innerHTML = '<option value="user">👤 ผู้เบิก</option><option value="manager">👔 ผู้จัดการ</option><option value="stock">📦 สต๊อก</option>' +
+      (SESSION.role === 'admin' ? '<option value="admin">🛡️ Admin</option>' : '');
+    euRole.value = u.role;
+  }
   om('edituser');
 }
 function updUser() {
   var id = document.getElementById('eu-id').value, np = document.getElementById('eu-pass').value.trim();
-  var data = { id: id, name: document.getElementById('eu-name').value.trim(), username: document.getElementById('eu-user').value.trim().toLowerCase(), branch: document.getElementById('eu-branch').value, dept: document.getElementById('eu-dept').value, role: document.getElementById('eu-role').value, status: document.getElementById('eu-status').value };
+  var newRole = document.getElementById('eu-role').value;
+  // Stock cannot assign admin role
+  if (newRole === 'admin' && SESSION.role !== 'admin') { toast('ไม่มีสิทธิ์กำหนดสิทธิ์ Admin', 'error'); return; }
+  var data = { id: id, name: document.getElementById('eu-name').value.trim(), username: document.getElementById('eu-user').value.trim().toLowerCase(), branch: document.getElementById('eu-branch').value, dept: document.getElementById('eu-dept').value, role: newRole, status: document.getElementById('eu-status').value };
   if (np) data.password = np;
   api('updateUser', data, function(e, r) {
     if (r && r.ok) { toast('อัปเดตบัญชีแล้ว', 'success'); cm('edituser'); loadUsers(function() { rUsersTable(); }); }
@@ -1006,23 +1063,38 @@ function removeDept(v) { if (!confirm('ลบแผนก "' + v + '"?')) return
 // ===== REQUEST FORM =====
 function rReqForm() {
   document.getElementById('rf-name').value = SESSION.name; document.getElementById('rf-branch').value = SESSION.branch;
-  document.getElementById('rf-qty').value = 1;
-  rCustomerInputs(); rMyMini(); rRfAlerts();
+  var items = CACHE.items.filter(function(i) { return i.qty > 0; });
+  var sel = document.getElementById('rf-item');
+  sel.innerHTML = '<option value="">-- เลือกรายการ --</option>' + items.map(function(i) { return '<option value="' + i.id + '">' + (i.icon || '📦') + ' ' + i.name + ' (เหลือ ' + i.qty + ' ' + i.unit + ')</option>'; }).join('');
+  document.getElementById('rf-hint').textContent = ''; rMyMini(); rRfAlerts();
 }
-function umax() { rCustomerInputs(); }
+function umax() {
+  var id = document.getElementById('rf-item').value;
+  var it = CACHE.items.find(function(i) { return String(i.id) === String(id); });
+  if (it) {
+    document.getElementById('rf-qty').max = it.qty;
+    document.getElementById('rf-qty').value = 1;
+    document.getElementById('rf-hint').textContent = 'คงเหลือ ' + it.qty + ' ' + it.unit;
+  } else {
+    document.getElementById('rf-hint').textContent = '';
+  }
+  rCustomerInputs();
+}
 function cq(d) {
   var el = document.getElementById('rf-qty');
-  el.value = Math.min(Math.max(1, (parseInt(el.value) || 1) + d), 50);
+  el.value = Math.min(Math.max(1, (parseInt(el.value) || 1) + d), parseInt(el.max) || 9999);
   rCustomerInputs();
 }
 function rCustomerInputs() {
-  var qty = parseInt(document.getElementById('rf-qty').value) || 1;
-  var items = CACHE.items.filter(function(i) { return i.qty > 0; });
+  var qty = parseInt(document.getElementById('rf-qty').value) || 0;
+  var itemId = document.getElementById('rf-item').value;
+  var items = CACHE.items;
   var itemOptions = items.map(function(i) {
-    return '<option value="' + i.name + '">' + (i.icon || '') + ' ' + i.name + ' (เหลือ ' + i.qty + ' ' + i.unit + ')</option>';
+    return '<option value="' + i.name + '">' + (i.icon || '') + ' ' + i.name + '</option>';
   }).join('');
   var container = document.getElementById('rf-customers');
   if (!container) return;
+  if (!itemId || qty < 1) { container.innerHTML = ''; return; }
   var html = '<div style="background:#f0f4ff;border-radius:10px;padding:14px;border:1px solid #b0c0f0">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px"><i class="ti ti-users"></i> ข้อมูลลูกค้า ' + qty + ' ราย</div>';
   for (var i = 0; i < qty; i++) {
@@ -1032,8 +1104,8 @@ function rCustomerInputs() {
     // Customer name
     html += '<div class="ff ful"><label>ชื่อ-สกุล ลูกค้า *</label>';
     html += '<input type="text" id="cust-name-' + i + '" placeholder="ชื่อ-สกุล ลูกค้า" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Sarabun,sans-serif;width:100%;outline:none"></div>';
-    // Premium item for this customer (required)
-    html += '<div class="ff"><label>ของพรีเมียมสำหรับลูกค้านี้ *</label>';
+    // Premium item for this customer
+    html += '<div class="ff"><label>ของพรีเมียมสำหรับลูกค้านี้</label>';
     html += '<select id="cust-item-' + i + '" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Sarabun,sans-serif;width:100%">';
     html += '<option value="">-- เลือกของพรีเมียม --</option>' + itemOptions;
     html += '</select></div>';
@@ -1053,47 +1125,36 @@ function rCustomerInputs() {
 function rMyMini() { var reqs = CACHE.reqs.filter(function(r) { return r.name === SESSION.name; }).slice(-6).reverse(); document.querySelector('#myreqmini tbody').innerHTML = reqs.length ? reqs.map(function(r) { return '<tr><td>' + r.item + '</td><td>' + r.qty + '</td><td>' + flowBadge(r) + '</td></tr>'; }).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">ยังไม่มีรายการ</td></tr>'; }
 function rRfAlerts() { var al = CACHE.items.filter(function(i) { return stSt(i) !== 'ok'; }); document.getElementById('rfalerts').innerHTML = al.length ? '<div class="alert awarn"><i class="ti ti-alert-triangle"></i><span><strong>ใกล้หมด/หมด:</strong> ' + al.map(function(i) { return i.name; }).join(', ') + '</span></div>' : ''; }
 function submitReq() {
-  var qty = parseInt(document.getElementById('rf-qty').value);
-  if (!qty || qty < 1) { toast('กรุณาระบุจำนวนลูกค้า', 'error'); return; }
+  var id = document.getElementById('rf-item').value, qty = parseInt(document.getElementById('rf-qty').value);
+  if (!id) { toast('กรุณาเลือกรายการ', 'error'); return; }
+  if (!qty || qty < 1) { toast('กรุณาระบุจำนวน', 'error'); return; }
+  var it = CACHE.items.find(function(i) { return String(i.id) === String(id); }); if (!it) return;
+  if (qty > it.qty) { toast('จำนวนเกินสต๊อก', 'error'); return; }
 
-  // Collect customer data and validate
+  // Collect customer data
   var customers = [];
-  var itemTally = {}; // count how many of each item is requested
   for (var i = 0; i < qty; i++) {
     var cname = (document.getElementById('cust-name-' + i) || {}).value || '';
-    var citem = (document.getElementById('cust-item-' + i) || {}).value || '';
+    var citem = (document.getElementById('cust-item-' + i) || {}).value || it.name;
     var ctype = (document.getElementById('cust-type-' + i) || {}).value || '';
     if (!cname.trim()) { toast('กรุณากรอกชื่อลูกค้าที่ ' + (i+1), 'error'); return; }
-    if (!citem) { toast('กรุณาเลือกของพรีเมียมสำหรับลูกค้าที่ ' + (i+1), 'error'); return; }
     if (!ctype) { toast('กรุณาเลือกประเภทลูกค้าที่ ' + (i+1), 'error'); return; }
-    customers.push({ name: cname.trim(), item: citem, type: ctype });
-    itemTally[citem] = (itemTally[citem] || 0) + 1;
+    customers.push({ name: cname.trim(), item: citem || it.name, type: ctype });
   }
-
-  // Validate stock for each item
-  for (var itemName in itemTally) {
-    var it = CACHE.items.find(function(x) { return x.name === itemName; });
-    if (!it) { toast('ไม่พบของ "' + itemName + '" ในสต๊อก', 'error'); return; }
-    if (itemTally[itemName] > it.qty) { toast('"' + itemName + '" เหลือ ' + it.qty + ' ' + it.unit + ' แต่ขอ ' + itemTally[itemName], 'error'); return; }
-  }
-
-  // Use first item name as main item label (for display), actual per-customer items stored in customers
-  var firstItem = customers[0].item;
-  var firstIt = CACHE.items.find(function(x) { return x.name === firstItem; }) || {};
 
   api('addReq', {
     userId: SESSION.id, name: SESSION.name, branch: SESSION.branch,
-    item: Object.keys(itemTally).join(', '),
-    unit: firstIt.unit || 'ชิ้น',
-    qty: qty,
+    item: it.name, unit: it.unit, qty: qty,
     purpose: document.getElementById('rf-purp').value,
     note: document.getElementById('rf-note').value.trim(),
     customers: JSON.stringify(customers)
   }, function(e, r) {
     if (r && r.ok) {
       toast('ส่งคำขอแล้ว รอผู้จัดการอนุมัติ ✅', 'success');
+      document.getElementById('rf-item').value = '';
       document.getElementById('rf-qty').value = 1;
       document.getElementById('rf-note').value = '';
+      document.getElementById('rf-hint').textContent = '';
       var cc = document.getElementById('rf-customers');
       if (cc) cc.innerHTML = '';
       loadReqs(function() { rReqForm(); });
@@ -1150,7 +1211,7 @@ function rCatalog() {
     return '<div class="sc ' + st + '"><div class="scicon">' + catIcon + '</div><div class="scname">' + it.name + '</div><div class="sccat">' + it.cat + '</div><div class="scqty ' + st + '">' + it.qty + '</div><div class="scunit">' + it.unit + ' คงเหลือ</div><div style="margin-top:8px"><span class="badge ' + cl[st] + '">' + tl[st] + '</span></div><div style="margin-top:8px">' + (st !== 'out' ? '<button class="btn btnp btnxs" onclick="pickCat(\'' + it.id + '\')"><i class="ti ti-plus"></i> เบิก</button>' : '<button class="btn btnx btnxs" disabled>หมด</button>') + '</div></div>';
   }).join('');
 }
-function pickCat(id) { gp('reqform'); }
+function pickCat(id) { gp('reqform'); setTimeout(function() { document.getElementById('rf-item').value = id; umax(); }, 100); }
 
 // ===== CONFIRM RECEIPT (User uploads photo after receiving) =====
 function loadReceiptPage() {
