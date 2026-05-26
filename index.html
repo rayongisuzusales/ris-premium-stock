@@ -1450,5 +1450,45 @@ function submitReceiptItem(reqId, itemIndex, cardId, btnId) {
   confirmReceiptItem(reqId, itemIndex, cardId, btnId);
 }
 </script>
+
+<!-- FIX-1779775303 -->
+<script id="ris-fix-1779775303">
+// Emergency override - loaded separately from main script
+window.addEventListener('DOMContentLoaded', function() {
+  // Patch confirmReceiptItem globally
+  window.confirmReceiptItem = function(reqId, itemIndex, cardId, btnId) {
+    var newCardId = 'rc_' + reqId + '_' + itemIndex;
+    var imgEl = document.getElementById('img_' + newCardId);
+    if (imgEl && imgEl.value) {
+      window.sendPhoto(reqId, itemIndex, newCardId);
+      return;
+    }
+    if (window.sendPhoto) {
+      var altCardId = cardId || newCardId;
+      window.sendPhoto(reqId, itemIndex, altCardId);
+    } else {
+      alert('กรุณารีเฟรชหน้าเว็บใหม่');
+    }
+  };
+  window.submitReceiptItem = window.confirmReceiptItem;
+  console.log('[RIS-FIX-1779775303] confirmReceiptItem patched successfully');
+});
+// Also patch immediately in case DOMContentLoaded already fired
+window.confirmReceiptItem = function(reqId, itemIndex, cardId, btnId) {
+  var newCardId = 'rc_' + reqId + '_' + itemIndex;
+  var imgEl = document.getElementById('img_' + newCardId);
+  if (imgEl && imgEl.value) {
+    window.sendPhoto(reqId, itemIndex, newCardId);
+    return;
+  }
+  if (window.sendPhoto) {
+    var altCardId = cardId || newCardId;
+    window.sendPhoto(reqId, itemIndex, altCardId);
+  } else {
+    alert('กรุณารีเฟรชหน้าเว็บใหม่');
+  }
+};
+window.submitReceiptItem = window.confirmReceiptItem;
+</script>
 </body>
 </html>
