@@ -1191,9 +1191,7 @@ function rReceiptPage() {
         upArea.innerHTML = '<i class="ti ti-camera" style="font-size:28px;color:#7f8c9a"></i>' +
           '<div style="font-size:13px;color:#7f8c9a;margin-top:6px">กดเพื่ออัปโหลดรูปภาพยืนยัน</div>' +
           '<div style="font-size:10px;color:#bbb;margin-top:4px">JPG PNG (บีบอัดอัตโนมัติ)</div>';
-        (function(rId, idx) {
-          upArea.addEventListener('click', function() { triggerReceiptUpload(rId + '-' + idx); });
-        })(reqId, itemIndex);
+        upArea.setAttribute('onclick', 'triggerReceiptUpload("' + reqId + '-' + itemIndex + '")');
         body.appendChild(upArea);
 
         // Preview
@@ -1214,9 +1212,7 @@ function rReceiptPage() {
         btn.className = 'btn btnp btnsm';
         btn.style.cssText = 'width:100%;justify-content:center;margin-top:10px';
         btn.innerHTML = '<i class="ti ti-send"></i> ส่งรูปยืนยันชิ้นที่ ' + (itemIndex + 1);
-        (function(rId, idx, cId, bId) {
-          btn.addEventListener('click', function() { submitReceiptItem(rId, idx, cId, bId); });
-        })(reqId, itemIndex, cardId, btnId);
+        btn.setAttribute('onclick', 'submitReceiptItem("' + reqId + '",' + itemIndex + ',"' + cardId + '","' + btnId + '")');
         body.appendChild(btn);
 
         card.appendChild(body);
@@ -1228,20 +1224,11 @@ function rReceiptPage() {
         fileInp.accept = 'image/*';
         fileInp.style.display = 'none';
         fileInp.id = 'receipt-img-' + reqId + '-' + itemIndex;
-        (function(rId, idx) {
-          fileInp.addEventListener('change', function() {
-            receiptImgChanged(this, rId + '-' + idx);
-          });
-        })(reqId, itemIndex);
+        fileInp.setAttribute('onchange', 'receiptImgChanged(this,"' + reqId + '-' + itemIndex + '")');
         document.body.appendChild(fileInp);
       })(i, r.id, r.item, r.unit);
     }
   });
-}
-
-// Alias for backward compatibility
-function confirmReceiptItem(reqId, itemIndex, cardId, btnId) {
-  submitReceiptItem(reqId, itemIndex, cardId, btnId);
 }
 
 function submitReceiptItem(reqId, itemIndex, cardId, btnId) {
