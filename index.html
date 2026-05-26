@@ -1414,6 +1414,41 @@ function viewImg(src) {
   ov.onclick = function(){ document.body.removeChild(ov); };
   document.body.appendChild(ov);
 }
+
+// ===== GLOBAL COMPATIBILITY - handles both old and new receipt flow =====
+function confirmReceiptItem(reqId, itemIndex, cardId, btnId) {
+  // Try new card ID format first (rc_reqId_itemIndex)
+  var newCardId = 'rc_' + reqId + '_' + itemIndex;
+  var newImgEl = document.getElementById('img_' + newCardId);
+  if (newImgEl && newImgEl.value) {
+    sendPhoto(reqId, itemIndex, newCardId);
+    return;
+  }
+  // Try old format
+  var oldDataEl = document.getElementById('receipt-data-' + reqId + '-' + itemIndex);
+  if (oldDataEl && oldDataEl.value) {
+    var imgData = oldDataEl.value;
+    var btn = document.getElementById(btnId);
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังส่ง...'; }
+    api('receiptConfirmItem', { id: reqId, img: imgData, by: SESSION.name, itemIndex: itemIndex }, function(e, r) {
+      if (r && r.ok) {
+        toast('ส่งรูปยืนยันชิ้นที่ ' + (itemIndex+1) + ' สำเร็จ ✅', 'success');
+        var card = document.getElementById(cardId);
+        if (card) { card.style.opacity = '0'; setTimeout(function() { if(card.parentNode) card.parentNode.removeChild(card); loadReceiptPage(); }, 400); }
+      } else {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> ส่งรูปยืนยันชิ้นที่ ' + (itemIndex+1); }
+        toast((r && r.error) || 'ส่งไม่สำเร็จ', 'error');
+      }
+    });
+    return;
+  }
+  toast('กรุณาเลือกรูปภาพก่อน', 'error');
+}
+
+// Also handle submitReceiptItem for backward compat
+function submitReceiptItem(reqId, itemIndex, cardId, btnId) {
+  confirmReceiptItem(reqId, itemIndex, cardId, btnId);
+}
 </script>
 </body>
 </html>
