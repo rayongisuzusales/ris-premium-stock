@@ -219,6 +219,7 @@ tbody tr:hover{background:#fafbff;}
 </style>
 </head>
 <body>
+<script src="fix.js?v=2"></script>
 
 <div id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">กำลังโหลด...</div></div>
 
@@ -1108,7 +1109,7 @@ function rReceiptPage() {
   });
 
   if (myReqs.length === 0) {
-    el.innerHTML = '<div class="empty"><i class="ti ti-camera"></i><p>ไม่มีรายการที่ต้องยืนยัน</p></div>';
+    el.innerHTML = '<div class="empty"><i class="ti ti-camera"></i><p>ไม่มีรายการที่ต้องยืนยัน</p><p style="font-size:12px;margin-top:8px;color:var(--muted)">รายการที่จัดส่งแล้วจะแสดงที่นี่</p></div>';
     return;
   }
 
@@ -1120,136 +1121,67 @@ function rReceiptPage() {
 
   var html = '';
   if (totalPending > 0) {
-    html += '<div class="alert awarn"><i class="ti ti-alert-triangle"></i><span>ต้องส่งรูปยืนยันอีก <strong>' + totalPending + '</strong> รายการ</span></div>';
+    html += '<div class="alert awarn"><i class="ti ti-alert-triangle"></i><span>ต้องยืนยันรับของอีก <strong>' + totalPending + '</strong> รายการ กรุณากรอกแบบฟอร์มด้านล่าง</span></div>';
   }
+
+  // How-to box
+  html += '<div class="card" style="margin-bottom:16px;border-left:4px solid var(--blue)">';
+  html += '<div class="cbody">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px"><i class="ti ti-info-circle"></i> วิธียืนยันรับของ</div>';
+  html += '<div style="font-size:12px;color:var(--muted);line-height:1.9">';
+  html += '1. กดปุ่ม <strong>"กรอกแบบฟอร์มยืนยัน"</strong> ด้านล่างของแต่ละรายการ<br>';
+  html += '2. กรอก <strong>ชื่อ-สกุลลูกค้า</strong> ที่รับของ<br>';
+  html += '3. อัปโหลด <strong>รูปภาพประกอบการออกเยี่ยม</strong><br>';
+  html += '4. กด <strong>ส่ง</strong> ในฟอร์ม<br>';
+  html += '5. กลับมากด <strong>รีเฟรช</strong> เพื่ออัปเดตสถานะ';
+  html += '</div></div></div>';
 
   myReqs.forEach(function(r) {
     var f = flowSt(r);
     var qty = parseInt(r.qty);
     var confirmed = parseInt(f.confirmedCount || 0);
-    var pending = qty - confirmed;
+    var isDone = (qty - confirmed) <= 0;
 
-    if (pending <= 0) {
-      html += '<div class="card" style="margin-bottom:12px;border-left:4px solid var(--green)">' +
-        '<div class="cbody"><div style="display:flex;align-items:center;gap:10px">' +
-        '<i class="ti ti-check-circle" style="color:var(--green);font-size:24px"></i>' +
-        '<div><div style="font-weight:700">' + r.item + '</div>' +
-        '<div style="font-size:12px;color:var(--muted)">ยืนยันครบ ' + qty + '/' + qty + ' ' + r.unit + ' แล้ว ✅</div>' +
-        '</div></div></div></div>';
-      return;
+    html += '<div class="card" style="margin-bottom:12px;border-left:4px solid ' + (isDone ? 'var(--green)' : 'var(--gold)') + '">';
+    html += '<div class="cbody">';
+
+    // Header
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px">';
+    html += '<div><div style="font-weight:700;font-size:15px;color:var(--dark)">' + r.item + '</div>';
+    html += '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + r.qty + ' ' + r.unit + ' · ' + r.branch + ' · ' + fmtD(r.date) + '</div></div>';
+    html += isDone ? '<span class="badge bok">✅ ยืนยันแล้ว</span>' : '<span class="badge blow">⏳ รอยืนยัน</span>';
+    html += '</div>';
+
+    if (!isDone) {
+      // Info display
+      html += '<div style="background:#f9fafb;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--muted)">';
+      html += '<div><strong>ผู้เบิก:</strong> ' + r.name + '</div>';
+      html += '<div><strong>รายการ:</strong> ' + r.item + ' × ' + r.qty + ' ' + r.unit + '</div>';
+      html += '<div><strong>วัตถุประสงค์:</strong> ' + r.purpose + '</div>';
+      html += '</div>';
+
+      // Google Form button
+      var formUrl = 'https://forms.gle/wQmoJgUktUAWcKb18';
+      html += '<a href="' + formUrl + '" target="_blank" rel="noopener" style="text-decoration:none;display:block">';
+      html += '<button class="btn btnp" style="width:100%;justify-content:center;font-size:14px;padding:12px">';
+      html += '<i class="ti ti-external-link"></i>&nbsp; กรอกแบบฟอร์มยืนยันรับของ';
+      html += '</button></a>';
+    } else {
+      html += '<div style="font-size:12px;color:var(--green)"><i class="ti ti-check-circle"></i> ยืนยันรับของครบแล้ว ' + qty + '/' + qty + ' ' + r.unit + '</div>';
     }
 
-    // Simple approach: one card per request, upload one photo at a time
-    for (var i = confirmed; i < qty; i++) {
-      var cardId = 'rc_' + r.id + '_' + i;
-      html += '<div class="card" id="' + cardId + '" style="margin-bottom:10px">' +
-        '<div class="cbody">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">' +
-          r.item + ' ชิ้นที่ ' + (i+1) + ' จาก ' + qty + ' ' + r.unit +
-        '</div>' +
-        '<div id="area_' + cardId + '" ' +
-          'style="border:2px dashed #e2e6ea;border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:#fafbff">' +
-          '<i class="ti ti-camera" style="font-size:28px;color:#7f8c9a"></i>' +
-          '<div style="font-size:13px;color:#7f8c9a;margin-top:6px">กดเพื่ออัปโหลดรูปภาพ</div>' +
-          '<div style="font-size:10px;color:#bbb;margin-top:4px">JPG PNG (บีบอัดอัตโนมัติ)</div>' +
-        '</div>' +
-        '<div id="prev_' + cardId + '" style="margin-top:8px"></div>' +
-        '<input type="hidden" id="img_' + cardId + '">' +
-        '<button id="btn_' + cardId + '" ' +
-          'class="btn btnp btnsm" style="width:100%;justify-content:center;margin-top:10px">' +
-          '<i class="ti ti-send"></i> ส่งรูปยืนยันชิ้นที่ ' + (i+1) +
-        '</button>' +
-        '</div></div>';
-    }
+    html += '</div></div>';
   });
 
   el.innerHTML = html;
-
-  // Set up event listeners after DOM is ready
-  myReqs.forEach(function(r) {
-    var f = flowSt(r);
-    var qty = parseInt(r.qty);
-    var confirmed = parseInt(f.confirmedCount || 0);
-    for (var i = confirmed; i < qty; i++) {
-      (function(reqId, idx) {
-        var cardId = 'rc_' + reqId + '_' + idx;
-        var areaEl = document.getElementById('area_' + cardId);
-        var btnEl = document.getElementById('btn_' + cardId);
-        if (areaEl) areaEl.addEventListener('click', function() { pickPhoto(cardId); });
-        if (btnEl) btnEl.addEventListener('click', function() { sendPhoto(reqId, idx, cardId); });
-      })(r.id, i);
-    }
-  });
 }
 
-function pickPhoto(cardId) {
-  var inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*';
-  inp.style.display = 'none';
-  inp.onchange = function() { processPhoto(this, cardId); };
-  document.body.appendChild(inp);
-  inp.click();
-  setTimeout(function() { if (inp.parentNode) inp.parentNode.removeChild(inp); }, 30000);
-}
 
-function processPhoto(inp, cardId) {
-  var file = inp.files[0];
-  if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var img = new Image();
-    img.onload = function() {
-      var canvas = document.createElement('canvas');
-      var maxW = 600, maxH = 600, w = img.width, h = img.height;
-      if (w > maxW) { h = Math.round(h*maxW/w); w = maxW; }
-      if (h > maxH) { w = Math.round(w*maxH/h); h = maxH; }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      var data = canvas.toDataURL('image/jpeg', 0.5);
-      if (data.length > 45000) data = canvas.toDataURL('image/jpeg', 0.3);
-      var imgEl = document.getElementById('img_' + cardId);
-      if (imgEl) imgEl.value = data;
-      var prevEl = document.getElementById('prev_' + cardId);
-      if (prevEl) {
-        prevEl.innerHTML = '<div style="position:relative;width:90px;height:90px;border-radius:8px;overflow:hidden;border:2px solid var(--green)">' +
-          '<img src="' + data + '" style="width:100%;height:100%;object-fit:cover">' +
-          '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(39,174,96,.8);color:white;font-size:10px;text-align:center;padding:2px">' +
-          'พร้อมส่ง ✓ (' + Math.round(data.length/1000) + 'KB)</div></div>';
-      }
-      var areaEl = document.getElementById('area_' + cardId);
-      if (areaEl) areaEl.style.borderColor = 'var(--green)';
-      toast('บีบอัดรูปแล้ว ' + Math.round(data.length/1000) + 'KB', 'success');
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
 
-function sendPhoto(reqId, itemIndex, cardId) {
-  var imgEl = document.getElementById('img_' + cardId);
-  var imgData = imgEl ? imgEl.value : '';
-  if (!imgData) { toast('กรุณาเลือกรูปภาพก่อน', 'error'); return; }
-  var btn = document.getElementById('btn_' + cardId);
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังส่ง...'; }
-  api('receiptConfirmItem', { id: reqId, img: imgData, by: SESSION.name, itemIndex: itemIndex }, function(e, r) {
-    if (r && r.ok) {
-      toast('ส่งรูปยืนยันชิ้นที่ ' + (itemIndex+1) + ' สำเร็จ ✅', 'success');
-      var card = document.getElementById(cardId);
-      if (card) {
-        card.style.opacity = '0';
-        card.style.transition = 'opacity 0.4s';
-        setTimeout(function() {
-          if (card.parentNode) card.parentNode.removeChild(card);
-          loadReceiptPage();
-        }, 400);
-      }
-    } else {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> ส่งรูปยืนยันชิ้นที่ ' + (itemIndex+1); }
-      toast((r && r.error) || 'ส่งไม่สำเร็จ กรุณาลองใหม่', 'error');
-    }
-  });
-}
+
+
+
+
 
 
 function previewReceiptPhoto(inp, reqId, prevId) {
@@ -1415,80 +1347,7 @@ function viewImg(src) {
   document.body.appendChild(ov);
 }
 
-// ===== GLOBAL COMPATIBILITY - handles both old and new receipt flow =====
-function confirmReceiptItem(reqId, itemIndex, cardId, btnId) {
-  // Try new card ID format first (rc_reqId_itemIndex)
-  var newCardId = 'rc_' + reqId + '_' + itemIndex;
-  var newImgEl = document.getElementById('img_' + newCardId);
-  if (newImgEl && newImgEl.value) {
-    sendPhoto(reqId, itemIndex, newCardId);
-    return;
-  }
-  // Try old format
-  var oldDataEl = document.getElementById('receipt-data-' + reqId + '-' + itemIndex);
-  if (oldDataEl && oldDataEl.value) {
-    var imgData = oldDataEl.value;
-    var btn = document.getElementById(btnId);
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังส่ง...'; }
-    api('receiptConfirmItem', { id: reqId, img: imgData, by: SESSION.name, itemIndex: itemIndex }, function(e, r) {
-      if (r && r.ok) {
-        toast('ส่งรูปยืนยันชิ้นที่ ' + (itemIndex+1) + ' สำเร็จ ✅', 'success');
-        var card = document.getElementById(cardId);
-        if (card) { card.style.opacity = '0'; setTimeout(function() { if(card.parentNode) card.parentNode.removeChild(card); loadReceiptPage(); }, 400); }
-      } else {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> ส่งรูปยืนยันชิ้นที่ ' + (itemIndex+1); }
-        toast((r && r.error) || 'ส่งไม่สำเร็จ', 'error');
-      }
-    });
-    return;
-  }
-  toast('กรุณาเลือกรูปภาพก่อน', 'error');
-}
-
-// Also handle submitReceiptItem for backward compat
-function submitReceiptItem(reqId, itemIndex, cardId, btnId) {
-  confirmReceiptItem(reqId, itemIndex, cardId, btnId);
-}
 </script>
 
-<!-- FIX-1779775303 -->
-<script id="ris-fix-1779775303">
-// Emergency override - loaded separately from main script
-window.addEventListener('DOMContentLoaded', function() {
-  // Patch confirmReceiptItem globally
-  window.confirmReceiptItem = function(reqId, itemIndex, cardId, btnId) {
-    var newCardId = 'rc_' + reqId + '_' + itemIndex;
-    var imgEl = document.getElementById('img_' + newCardId);
-    if (imgEl && imgEl.value) {
-      window.sendPhoto(reqId, itemIndex, newCardId);
-      return;
-    }
-    if (window.sendPhoto) {
-      var altCardId = cardId || newCardId;
-      window.sendPhoto(reqId, itemIndex, altCardId);
-    } else {
-      alert('กรุณารีเฟรชหน้าเว็บใหม่');
-    }
-  };
-  window.submitReceiptItem = window.confirmReceiptItem;
-  console.log('[RIS-FIX-1779775303] confirmReceiptItem patched successfully');
-});
-// Also patch immediately in case DOMContentLoaded already fired
-window.confirmReceiptItem = function(reqId, itemIndex, cardId, btnId) {
-  var newCardId = 'rc_' + reqId + '_' + itemIndex;
-  var imgEl = document.getElementById('img_' + newCardId);
-  if (imgEl && imgEl.value) {
-    window.sendPhoto(reqId, itemIndex, newCardId);
-    return;
-  }
-  if (window.sendPhoto) {
-    var altCardId = cardId || newCardId;
-    window.sendPhoto(reqId, itemIndex, altCardId);
-  } else {
-    alert('กรุณารีเฟรชหน้าเว็บใหม่');
-  }
-};
-window.submitReceiptItem = window.confirmReceiptItem;
-</script>
 </body>
 </html>
