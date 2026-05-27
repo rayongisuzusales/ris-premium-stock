@@ -218,7 +218,7 @@ tbody tr:hover{background:#fafbff;}
 .photo-preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#f0f0f0;}
 .photo-preview-item img{width:100%;height:100%;object-fit:cover;}
 .photo-preview-item button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
-/* RIS-STOCK-V2-15-LAYOUT-FIX */
+/* RIS-STOCK-V2-16-PRICE */
 </style>
 </head>
 <body>
@@ -1195,7 +1195,9 @@ function rCatalog() {
   document.getElementById('catgrid').innerHTML = CACHE.items.map(function(it) {
     var st = stSt(it);
     var catIcon = it.img ? '<img src="' + it.img + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">' : (it.icon || '📦');
-    return '<div class="sc ' + st + '"><div class="scicon">' + catIcon + '</div><div class="scname">' + it.name + '</div><div class="sccat">' + it.cat + '</div><div class="scqty ' + st + '">' + it.qty + '</div><div class="scunit">' + it.unit + ' คงเหลือ</div><div style="margin-top:8px"><span class="badge ' + cl[st] + '">' + tl[st] + '</span></div><div style="margin-top:8px">' + (st !== 'out' ? '<button class="btn btnp btnxs" onclick="pickCat(\'' + it.id + '\')"><i class="ti ti-plus"></i> เบิก</button>' : '<button class="btn btnx btnxs" disabled>หมด</button>') + '</div></div>';
+    return '<div class="sc ' + st + '"><div class="scicon">' + catIcon + '</div><div class="scname">' + it.name + '</div><div class="sccat">' + it.cat + '</div><div class="scqty ' + st + '">' + it.qty + '</div><div class="scunit">' + it.unit + ' คงเหลือ</div>' +
+      (it.price > 0 ? '<div style="font-size:11px;color:var(--muted);margin-top:4px">฿' + Number(it.price).toLocaleString() + ' / ' + it.unit + '</div>' : '') +
+      '<div style="margin-top:8px"><span class="badge ' + cl[st] + '">' + tl[st] + '</span></div><div style="margin-top:8px">' + (st !== 'out' ? '<button class="btn btnp btnxs" onclick="pickCat(\'' + it.id + '\')"><i class="ti ti-plus"></i> เบิก</button>' : '<button class="btn btnx btnxs" disabled>หมด</button>') + '</div></div>';
   }).join('');
 }
 function pickCat(id) { gp('reqform'); }
