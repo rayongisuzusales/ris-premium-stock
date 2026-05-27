@@ -215,7 +215,7 @@ tbody tr:hover{background:#fafbff;}
 .photo-preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#f0f0f0;}
 .photo-preview-item img{width:100%;height:100%;object-fit:cover;}
 .photo-preview-item button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
-/* RIS-STOCK-V2-7-FEATURES */
+/* RIS-STOCK-V2-8-CUSTSHOW */
 </style>
 </head>
 <body>
@@ -891,11 +891,16 @@ function renderReqsTable() {
     try { customers = JSON.parse(r.customers || '[]'); } catch(e) {}
     var custHtml = '';
     if (customers.length > 0) {
-      custHtml = '<div style="margin-top:4px">' + customers.map(function(c, i) {
-        return '<div style="font-size:10px;color:var(--muted);line-height:1.6">' +
-          '<span style="color:var(--dark);font-weight:600">' + (c.name||'-') + '</span>' +
-          ' · <span style="color:var(--teal)">' + (c.type||'-') + '</span></div>';
-      }).join('') + '</div>';
+      custHtml = '<div style="margin-top:6px;border-top:1px dashed #e2e6ea;padding-top:6px">' +
+        '<div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">รายชื่อลูกค้า</div>' +
+        customers.map(function(c, i) {
+          return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px">' +
+            '<span style="background:#e8f0ff;color:var(--blue);font-weight:700;padding:1px 5px;border-radius:4px;font-size:9px;flex-shrink:0">' + (i+1) + '</span>' +
+            '<span style="font-weight:600;color:var(--dark)">' + (c.name||'-') + '</span>' +
+            '<span style="color:#ddd">·</span>' +
+            '<span style="color:var(--teal);font-size:10px">' + (c.type||'-') + '</span>' +
+            '</div>';
+        }).join('') + '</div>';
     }
     return '<tr><td style="font-size:10px;color:var(--muted)">#' + String(r.id).slice(-4) + '</td><td><strong>' + r.name + '</strong></td><td>' + r.branch + '</td><td>' + r.item + custHtml + '</td><td>' + r.qty + ' ' + (r.unit || '') + '</td><td>' + r.purpose + '</td><td>' + fmtD(r.date) + '</td><td>' + flowBadge(r) + '</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">' + flowActions(r) + '</div></td></tr>';
   }).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">ไม่มีรายการ</td></tr>';
