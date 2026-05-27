@@ -731,14 +731,14 @@ function flowActions(r) {
   return html || '<span style="font-size:11px;color:var(--muted)">-</span>';
 }
 function mgrApprove(id) {
-  api('mgrApprove', { id: id, by: SESSION.name }, function(e, r) {
+  api('mgrApprove', { id: id, by: SESSION.name, mgrUsername: SESSION.username }, function(e, r) {
     if (r && r.ok) { toast('อนุมัติแล้ว รอสต๊อกจัดส่ง', 'success'); loadReqs(); }
     else toast((r && r.error) || 'เกิดข้อผิดพลาด', 'error');
   });
 }
 function mgrReject(id) {
   var reason = prompt('เหตุผลที่ไม่อนุมัติ (ไม่บังคับ):') || '';
-  api('mgrReject', { id: id, by: SESSION.name, reason: reason }, function(e, r) {
+  api('mgrReject', { id: id, by: SESSION.name, reason: reason, mgrUsername: SESSION.username }, function(e, r) {
     if (r && r.ok) { toast('ไม่อนุมัติคำขอแล้ว', 'warning'); loadReqs(); }
     else toast((r && r.error) || 'เกิดข้อผิดพลาด', 'error');
   });
