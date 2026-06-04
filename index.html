@@ -218,7 +218,7 @@ tbody tr:hover{background:#fafbff;}
 .photo-preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#f0f0f0;}
 .photo-preview-item img{width:100%;height:100%;object-fit:cover;}
 .photo-preview-item button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
-/* RIS-STOCK-V2-17-ITEM-IN-CUST */
+/* RIS-STOCK-V2-18-ITEM-FALLBACK */
 </style>
 </head>
 <body>
@@ -901,7 +901,7 @@ function renderReqsTable() {
             '<span style="background:#e8f0ff;color:var(--blue);font-weight:700;padding:1px 5px;border-radius:4px;font-size:9px;flex-shrink:0">' + (i+1) + '</span>' +
             '<span style="font-weight:600;color:var(--dark)">' + (c.name||'-') + '</span>' +
             '<span style="color:#ddd">·</span>' +
-            '<span style="background:#e8f8ef;color:#1a7a40;font-weight:700;padding:1px 6px;border-radius:4px;font-size:10px">' + (c.item||'-') + '</span>' +
+            '<span style="background:#e8f8ef;color:#1a7a40;font-weight:700;padding:1px 6px;border-radius:4px;font-size:10px">' + (c.item||r.item||'-') + '</span>' +
             '<span style="color:#ddd">·</span>' +
             '<span style="color:var(--teal);font-size:10px">' + (c.type||'-') + ' </span>' +
             '</div>';
