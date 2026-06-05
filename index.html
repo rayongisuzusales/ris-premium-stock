@@ -218,7 +218,7 @@ tbody tr:hover{background:#fafbff;}
 .photo-preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#f0f0f0;}
 .photo-preview-item img{width:100%;height:100%;object-fit:cover;}
 .photo-preview-item button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
-/* RIS-STOCK-V2-19-PHOTO-FILTER */
+/* RIS-STOCK-V2-20-CUST-NOTE */
 </style>
 </head>
 <body>
@@ -903,7 +903,8 @@ function renderReqsTable() {
             '<span style="color:#ddd">·</span>' +
             '<span style="background:#e8f8ef;color:#1a7a40;font-weight:700;padding:1px 6px;border-radius:4px;font-size:10px">' + (c.item||r.item||'-') + '</span>' +
             '<span style="color:#ddd">·</span>' +
-            '<span style="color:var(--teal);font-size:10px">' + (c.type||'-') + ' </span>' +
+            '<span style="color:var(--teal);font-size:10px">' + (c.type||'-') + '</span>' +
+            (c.note ? '<span style="color:#ddd">·</span><span style="color:var(--muted);font-size:10px;font-style:italic">' + c.note + '</span>' : '') +
             '</div>';
         }).join('') + '</div>';
     }
@@ -1105,6 +1106,8 @@ function rCustomerInputs() {
       : ['ลูกค้าออกรถไม่เกิน 90 วัน','ส่งมอบรถใหม่','เยี่ยมลูกค้าแนะนำ/ลูกค้าเก่า/ลูกค้าพิเศษ'];
     custTypes.forEach(function(ct) { html += '<option value="' + ct + '">' + ct + '</option>'; });
     html += '</select></div>';
+    html += '<div class="ff ful"><label>หมายเหตุ (ถ้ามี)</label>';
+    html += '<input type="text" id="cust-note-' + i + '" placeholder="หมายเหตุเพิ่มเติม เช่น สีที่ต้องการ, ขนาด..." style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Sarabun,sans-serif;width:100%;outline:none"></div>';
     html += '</div></div>';
   }
   html += '</div>';
@@ -1120,10 +1123,11 @@ function submitReq() {
     var cname = (document.getElementById('cust-name-' + i) || {}).value || '';
     var citem = (document.getElementById('cust-item-' + i) || {}).value || '';
     var ctype = (document.getElementById('cust-type-' + i) || {}).value || '';
+    var cnote = (document.getElementById('cust-note-' + i) || {}).value || '';
     if (!cname.trim()) { toast('กรุณากรอกชื่อลูกค้าที่ ' + (i+1), 'error'); return; }
     if (!citem) { toast('กรุณาเลือกของพรีเมียมสำหรับลูกค้าที่ ' + (i+1), 'error'); return; }
     if (!ctype) { toast('กรุณาเลือกประเภทลูกค้าที่ ' + (i+1), 'error'); return; }
-    customers.push({ name: cname.trim(), item: citem, type: ctype });
+    customers.push({ name: cname.trim(), item: citem, type: ctype, note: cnote.trim() });
     itemTally[citem] = (itemTally[citem] || 0) + 1;
   }
   // Validate stock per item
@@ -1267,6 +1271,7 @@ function rReceiptPage() {
         html += '<span style="color:var(--muted)">' + (c.item || r.item) + '</span>';
         html += '<span style="color:var(--muted)">·</span>';
         html += '<span style="color:var(--teal);font-size:10px">' + (c.type || '-') + '</span>';
+        if (c.note) { html += '<span style="color:var(--muted)">·</span><span style="color:var(--muted);font-size:10px;font-style:italic">' + c.note + '</span>'; }
         html += '</div>';
       });
       html += '</div>';
@@ -1418,6 +1423,7 @@ function rPhotosPage() {
   html += '<th style="padding:10px 14px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);text-transform:uppercase">ลูกค้า</th>';
   html += '<th style="padding:10px 14px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);text-transform:uppercase">ของพรีเมียม</th>';
   html += '<th style="padding:10px 14px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);text-transform:uppercase">ประเภทลูกค้า</th>';
+  html += '<th style="padding:10px 14px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);text-transform:uppercase">หมายเหตุ</th>';
   html += '<th style="padding:10px 14px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);text-transform:uppercase">สถานะ</th>';
   html += '</tr></thead><tbody>';
 
@@ -1434,6 +1440,7 @@ function rPhotosPage() {
         html += '<td style="padding:10px 14px;font-size:12px;font-weight:600">' + (c.name || '-') + '</td>';
         html += '<td style="padding:10px 14px;font-size:12px">' + (c.item || r.item) + '</td>';
         html += '<td style="padding:10px 14px;font-size:11px;color:var(--teal)">' + (c.type || '-') + '</td>';
+        html += '<td style="padding:10px 14px;font-size:11px;color:var(--muted);font-style:italic">' + (c.note || '-') + '</td>';
         html += idx === 0 ? '<td style="padding:10px 14px" rowspan="' + customers.length + '">' + (isDone ? '<span class="badge bok">✅ เสร็จสิ้น</span>' : '<span class="badge blow">⏳ ยังไม่เสร็จสิ้น</span>') + '</td>' : '';
         html += '</tr>';
       });
@@ -1442,6 +1449,7 @@ function rPhotosPage() {
       html += '<td style="padding:10px 14px;font-size:12px"><strong>' + r.name + '</strong><br><span style="font-size:10px;color:var(--muted)">' + r.branch + '</span></td>';
       html += '<td style="padding:10px 14px;font-size:12px;color:var(--muted)">-</td>';
       html += '<td style="padding:10px 14px;font-size:12px">' + r.item + ' × ' + r.qty + ' ' + r.unit + '</td>';
+      html += '<td style="padding:10px 14px;font-size:11px;color:var(--muted)">-</td>';
       html += '<td style="padding:10px 14px;font-size:11px;color:var(--muted)">-</td>';
       html += '<td style="padding:10px 14px">' + (isDone ? '<span class="badge bok">✅ เสร็จสิ้น</span>' : '<span class="badge blow">⏳ ยังไม่เสร็จสิ้น</span>') + '</td>';
       html += '</tr>';
