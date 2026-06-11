@@ -218,7 +218,7 @@ tbody tr:hover{background:#fafbff;}
 .photo-preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#f0f0f0;}
 .photo-preview-item img{width:100%;height:100%;object-fit:cover;}
 .photo-preview-item button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
-/* RIS-STOCK-V2-20-CUST-NOTE */
+/* RIS-STOCK-V2-21-ADMIN-FULL */
 </style>
 </head>
 <body>
@@ -884,6 +884,10 @@ function renderReqsTable() {
   var wc = document.getElementById('rwcnt'); if (wc) wc.innerHTML = wait ? '<span class="badge bwait" style="margin-left:4px">' + wait + '</span>' : '';
   if (RFilt === 0) {
     if (role === 'stock') { /* already filtered */ }
+    else if (role === 'admin') {
+      // Admin เห็นทุกรายการที่ยังไม่ done และไม่ rejected
+      reqs = reqs.filter(function(r) { var f = flowSt(r); return !f.done && f.mgr !== 'rejected'; });
+    }
     else reqs = reqs.filter(function(r) { var f = flowSt(r); return !f.done && f.mgr === 'pending'; });
   } else if (RFilt === 1) {
     reqs = CACHE.reqs.filter(function(r) { var f = flowSt(r); return f.done || f.mgr === 'rejected'; });
