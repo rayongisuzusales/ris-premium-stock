@@ -218,7 +218,7 @@ tbody tr:hover{background:#fafbff;}
 .photo-preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#f0f0f0;}
 .photo-preview-item img{width:100%;height:100%;object-fit:cover;}
 .photo-preview-item button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
-/* RIS-STOCK-V2-22-PER-CUST-CONFIRM */
+/* RIS-STOCK-V2-23-CUST-CANCEL */
 </style>
 </head>
 <body>
@@ -1264,38 +1264,56 @@ function rReceiptPage() {
     var f = flowSt(r);
     var confirmed = [];
     try { confirmed = JSON.parse(f.confirmedCustomers || '[]'); } catch(e) {}
+    var cancelled = [];
+    try { cancelled = JSON.parse(f.cancelledCustomers || '[]'); } catch(e) {}
     var customers = [];
     try { customers = JSON.parse(r.customers || r.note || '[]'); } catch(e) {}
 
-    var allDone = customers.length > 0 && confirmed.length >= customers.length;
-    var borderColor = allDone ? 'var(--green)' : 'var(--gold)';
+    var activeCusts = customers.filter(function(c,i){ return cancelled.indexOf(i) < 0; });
+    var allDone = activeCusts.length > 0 && activeCusts.every(function(c,i){
+      var realIdx = customers.indexOf(c);
+      return confirmed.indexOf(realIdx) >= 0;
+    });
+    var hasCancelled = cancelled.length > 0;
+    var borderColor = allDone ? 'var(--green)' : (hasCancelled ? 'var(--red)' : 'var(--gold)');
 
     html += '<div class="card" style="margin-bottom:12px;border-left:4px solid ' + borderColor + '">';
     html += '<div class="cbody">';
     html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">';
     html += '<div><div style="font-weight:700;font-size:15px;color:var(--dark)">' + r.item + '</div>';
     html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + r.qty + ' ' + r.unit + ' · ' + r.branch + ' · ' + fmtD(r.date) + '</div></div>';
-    html += allDone ? '<span class="badge bok">✅ ครบทุกคนแล้ว</span>' : '<span class="badge blow">⏳ รอยืนยัน ' + confirmed.length + '/' + customers.length + '</span>';
+    var doneCount = confirmed.length, cancelCount = cancelled.length;
+    html += allDone ? '<span class="badge bok">✅ ครบทุกคนแล้ว</span>' :
+      '<span class="badge blow">⏳ ยืนยัน ' + doneCount + '/' + customers.length + (cancelCount > 0 ? ' · ยกเลิก ' + cancelCount : '') + '</span>';
     html += '</div>';
 
     if (customers.length > 0) {
       html += '<div style="margin-bottom:8px">';
       customers.forEach(function(c, idx) {
         var isCustDone = confirmed.indexOf(idx) >= 0;
-        html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:' + (isCustDone ? '#f0faf4' : '#fffdf0') + ';border:1px solid ' + (isCustDone ? '#b7e4c7' : '#f0c040') + ';border-radius:8px;margin-bottom:6px">';
+        var isCustCancelled = cancelled.indexOf(idx) >= 0;
+        var bgColor = isCustDone ? '#f0faf4' : (isCustCancelled ? '#fdecea' : '#fffdf0');
+        var bdColor = isCustDone ? '#b7e4c7' : (isCustCancelled ? '#f5c6cb' : '#f0c040');
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:' + bgColor + ';border:1px solid ' + bdColor + ';border-radius:8px;margin-bottom:6px">';
         html += '<span style="background:#e8f0ff;color:var(--blue);font-weight:700;padding:2px 7px;border-radius:5px;font-size:10px;flex-shrink:0">' + (idx+1) + '</span>';
         html += '<div style="flex:1;min-width:0">';
-        html += '<div style="font-size:12px;font-weight:600">' + (c.name || '-') + '</div>';
+        html += '<div style="font-size:12px;font-weight:600' + (isCustCancelled ? ';text-decoration:line-through;color:var(--muted)' : '') + '">' + (c.name || '-') + '</div>';
         html += '<div style="font-size:10px;color:var(--muted)">' + (c.item || r.item) + ' · ' + (c.type || '-') + (c.note ? ' · ' + c.note : '') + '</div>';
         html += '</div>';
         if (isCustDone) {
           html += '<span style="font-size:11px;color:var(--green);font-weight:700;flex-shrink:0"><i class="ti ti-check"></i> ยืนยันแล้ว</span>';
+        } else if (isCustCancelled) {
+          html += '<span style="font-size:11px;color:var(--red);font-weight:700;flex-shrink:0"><i class="ti ti-x"></i> ยกเลิกแล้ว</span>';
         } else {
-          html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">';
+          html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">';
           html += '<a href="' + formUrl + '" target="_blank" rel="noopener" style="text-decoration:none"><button class="btn btno btnxs"><i class="ti ti-external-link"></i> แบบฟอร์ม</button></a>';
           html += '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:white;border:1.5px solid var(--blue);border-radius:7px;padding:4px 8px">';
           html += '<input type="checkbox" id="chk_' + r.id + '_' + idx + '" onchange="toggleCustDone(\'' + r.id + '\',' + idx + ')" style="width:15px;height:15px;cursor:pointer">';
-          html += '<span style="font-size:11px;font-weight:600;color:var(--blue)">ติ๊กยืนยัน</span>';
+          html += '<span style="font-size:11px;font-weight:600;color:var(--blue)">ยืนยัน</span>';
+          html += '</label>';
+          html += '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:white;border:1.5px solid var(--red);border-radius:7px;padding:4px 8px">';
+          html += '<input type="checkbox" id="cxl_' + r.id + '_' + idx + '" onchange="toggleCustCancel(\'' + r.id + '\',' + idx + ')" style="width:15px;height:15px;cursor:pointer">';
+          html += '<span style="font-size:11px;font-weight:600;color:var(--red)">ยกเลิก</span>';
           html += '</label>';
           html += '</div>';
         }
@@ -1331,6 +1349,22 @@ function toggleCustDone(reqId, custIdx) {
   api('markCustConfirmed', { id: reqId, custIdx: custIdx, by: SESSION.name }, function(e, r) {
     if (r && r.ok) {
       toast('บันทึกสถานะยืนยันแล้ว ✅', 'success');
+      loadReceiptPage();
+    } else {
+      chk.checked = false; chk.disabled = false;
+      toast((r && r.error) || 'เกิดข้อผิดพลาด', 'error');
+    }
+  });
+}
+
+function toggleCustCancel(reqId, custIdx) {
+  var chk = document.getElementById('cxl_' + reqId + '_' + custIdx);
+  if (!chk || !chk.checked) return;
+  if (!confirm('ยืนยันการยกเลิกลูกค้ารายนี้?')) { chk.checked = false; return; }
+  chk.disabled = true;
+  api('markCustCancelled', { id: reqId, custIdx: custIdx, by: SESSION.name }, function(e, r) {
+    if (r && r.ok) {
+      toast('ยกเลิกรายการลูกค้าแล้ว ❌', 'warning');
       loadReceiptPage();
     } else {
       chk.checked = false; chk.disabled = false;
@@ -1476,15 +1510,19 @@ function rPhotosPage() {
     try { customers = JSON.parse(r.customers || '[]'); } catch(e) {}
 
     if (customers.length > 0) {
+      var cancelled = [];
+      try { cancelled = JSON.parse(f.cancelledCustomers || '[]'); } catch(e) {}
       customers.forEach(function(c, idx) {
         var isCustDone = confirmed.indexOf(idx) >= 0;
-        html += '<tr style="border-bottom:1px solid #f5f5f5;background:' + (isCustDone ? 'white' : '#fffdf0') + '">';
+        var isCustCancelled = cancelled.indexOf(idx) >= 0;
+        var rowBg = isCustDone ? 'white' : (isCustCancelled ? '#fdecea' : '#fffdf0');
+        html += '<tr style="border-bottom:1px solid #f5f5f5;background:' + rowBg + '">';
         html += '<td style="padding:10px 14px;font-size:12px">' + (idx === 0 ? '<strong>' + r.name + '</strong><br><span style="font-size:10px;color:var(--muted)">' + r.branch + '</span>' : '') + '</td>';
-        html += '<td style="padding:10px 14px;font-size:12px;font-weight:600">' + (c.name || '-') + '</td>';
+        html += '<td style="padding:10px 14px;font-size:12px;font-weight:600' + (isCustCancelled ? ';text-decoration:line-through;color:var(--muted)' : '') + '">' + (c.name || '-') + '</td>';
         html += '<td style="padding:10px 14px;font-size:12px">' + (c.item || r.item) + '</td>';
         html += '<td style="padding:10px 14px;font-size:11px;color:var(--teal)">' + (c.type || '-') + '</td>';
         html += '<td style="padding:10px 14px;font-size:11px;color:var(--muted);font-style:italic">' + (c.note || '-') + '</td>';
-        html += '<td style="padding:10px 14px">' + (isCustDone ? '<span class="badge bok">✅ เสร็จสิ้น</span>' : '<span class="badge blow">⏳ รอยืนยัน</span>') + '</td>';
+        html += '<td style="padding:10px 14px">' + (isCustDone ? '<span class="badge bok">✅ เสร็จสิ้น</span>' : (isCustCancelled ? '<span class="badge brej">❌ ยกเลิก</span>' : '<span class="badge blow">⏳ รอยืนยัน</span>')) + '</td>';
         html += '</tr>';
       });
     } else {
